@@ -1,0 +1,140 @@
+{
+  "name": "Welcome Email Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": "Sheet1",
+        "range": "A:D",
+        "options": {
+          "filter": {
+            "status": "not-send"
+          }
+        }
+      },
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        250,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": "googleSheetsOAuth2Api"
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://openrouter.ai/meta-llama/llama-3.3-8b-instruct:free/api",
+        "options": {
+          "bodyContentType": "json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messages",
+              "value": [
+                {
+                  "role": "system",
+                  "content": "You are a helpful assistant that generates personalized welcome emails."
+                },
+                {
+                  "role": "user",
+                  "content": "Generate a warm and professional welcome email for {{$json.name}}. Keep it concise and friendly."
+                }
+              ]
+            }
+          ]
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$credentials.openRouterApiKey}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "name": "OpenRouter API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": "openRouterApiKey"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": "Sheet1",
+        "options": {
+          "valueInputMode": "RAW"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{$json.email}}",
+            "name": "={{$json.name}}",
+            "status": "send",
+            "content": "={{$json.choices[0].message.content}}"
+          }
+        }
+      },
+      "name": "Update Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        650,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": "googleSheetsOAuth2Api"
+      }
+    }
+  ],
+  "connections": {
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "OpenRouter API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter API": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "1",
+  "meta": {
+    "instanceId": "1"
+  },
+  "tags": []
+} 
